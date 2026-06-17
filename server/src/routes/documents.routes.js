@@ -14,7 +14,7 @@ import {
 } from '../controllers/documents.controller.js';
 import { uploadLimiter } from "../middleware/rateLimiter.js";
 
-import {verifyToken} from '../middleware/auth.middleware.js';
+import { verifyToken, verifyTokenOptional } from '../middleware/auth.middleware.js';
 import pool from '../config/db.js';  // ← default import, matches your controller
 
 const router = express.Router();
@@ -29,7 +29,7 @@ const __dirname  = path.dirname(__filename);
 router.post(
   '/upload',
   uploadLimiter,
-  verifyToken,
+  verifyTokenOptional,
   upload.single('file'),
   uploadDocument
 );
@@ -49,14 +49,14 @@ router.get(
 
 router.get(
   '/:id/file',
-  verifyToken,
+  verifyTokenOptional,
   async (req, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user.id;
+      const userId = req.user?.id || null;
 
       const result = await pool.query(
-        'SELECT file_path FROM documents WHERE id = $1 AND user_id = $2',
+        'SELECT file_path FROM documents WHERE id = $1 AND (user_id IS NULL OR user_id = $2)',
         [id, userId]
       );
 
@@ -97,7 +97,7 @@ router.get(
 
 router.get(
   '/:id',
-  verifyToken,
+  verifyTokenOptional,
   getDocument
 );
 
@@ -110,14 +110,14 @@ router.delete(
   verifyToken,
   deleteDocument
 );
-router.get('/:documentId/export', verifyToken, async (req, res) => {
+router.get('/:documentId/export', verifyTokenOptional, async (req, res) => {
   try {
     const { documentId } = req.params;
-    const userId = req.user.id;
+    const userId = req.user?.id || null;
  
-    // ── Fetch document (ownership enforced) ──────────────────────────────────
+    // ── Fetch document (ownership enforced or anonymous) ────────────────────
     const docResult = await pool.query(
-      'SELECT * FROM documents WHERE id = $1 AND user_id = $2',
+      'SELECT * FROM documents WHERE id = $1 AND (user_id IS NULL OR user_id = $2)',
       [documentId, userId]
     );
  

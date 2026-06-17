@@ -95,8 +95,8 @@ export async function getDocument(req, res) {
          a.ai_provider
        FROM documents d
        LEFT JOIN analyses a ON a.document_id = d.id
-       WHERE d.id = $1 AND d.user_id = $2`,
-      [id, req.user.id]
+       WHERE d.id = $1 AND (d.user_id IS NULL OR d.user_id = $2)`,
+      [id, req.user?.id || null]
     );
 
     if (result.rows.length === 0) {

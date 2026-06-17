@@ -1,3 +1,21 @@
-node_modules/
+# Environment
 .env
+
+# Uploads (user files)
 uploads/
+
+# Database files
+*.sql.bak
+lexsimple_backup.sql
+refresh_tokens.sql
+migration.sql
+
+# Tesseract trained data (included in Docker image)
+*.traineddata
+
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*

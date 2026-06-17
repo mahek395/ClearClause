@@ -6,6 +6,7 @@ import Tesseract     from 'tesseract.js';
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import redisConnection from '../config/redis.js';
 import pool            from '../config/db.js';
+import { enqueueEmbedding } from '../queues/documentQueue.js';
 
 // ── Digital PDF text extraction ───────────────────────────────────────────────
 
@@ -86,7 +87,7 @@ async function processDocument(job) {
      WHERE id = $4`,
     [text, pageCount, isScanned, documentId]
   );
-
+await enqueueEmbedding(documentId);
   await job.updateProgress(100);
   console.log(`[Worker] ✅ Job ${job.id} done — document ${documentId} ready`);
   return { documentId, pageCount, textLength: text.length };

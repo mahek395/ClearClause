@@ -26,3 +26,26 @@ export function verifyToken(req, res, next) {
     return res.status(403).json({ error: 'Invalid token' });
   }
 }
+
+export function verifyTokenOptional(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token      = authHeader && authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7)
+    : null;
+
+  if (!token) {
+    req.user = null;
+    return next();
+  }
+
+  try {
+    const decoded = verifyAccessToken(token);
+    req.user = decoded; // { id, email, iat, exp }
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+}

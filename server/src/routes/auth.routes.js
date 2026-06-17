@@ -18,8 +18,8 @@ const REFRESH_TOKEN_EXPIRES_DAYS = parseInt(
 function setRefreshCookie(res, rawToken) {
   res.cookie('refreshToken', rawToken, {
     httpOnly: true,
+    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
     maxAge: REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000,
     path: '/',
   });
@@ -37,7 +37,7 @@ function clearRefreshCookie(res) {
 async function saveRefreshToken(userId, hash) {
   const expiresAt = new Date(
     Date.now() +
-      REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000
+    REFRESH_TOKEN_EXPIRES_DAYS * 24 * 60 * 60 * 1000
   );
 
   // Keep only one active refresh token per user
@@ -162,9 +162,9 @@ router.post('/login', loginLimiter, async (req, res) => {
     const passwordMatch = user
       ? await bcrypt.compare(password, user.password_hash)
       : await bcrypt.compare(
-          password,
-          '$2b$12$invalidhashtopreventtimingattack00000000000'
-        );
+        password,
+        '$2b$12$invalidhashtopreventtimingattack00000000000'
+      );
 
     if (!user || !passwordMatch) {
       return res.status(401).json({

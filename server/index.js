@@ -12,6 +12,7 @@ import { errorHandler } from './src/middleware/errorHandler.js';
 import { startAllWorkers } from './src/workers/index.js';
 import jobRoutes from './src/routes/jobs.routes.js';
 import { globalLimiter } from "./src/middleware/rateLimiter.js";
+import chatRoutes from './src/routes/chat.routes.js';
 
 dotenv.config();
 
@@ -22,8 +23,10 @@ const app = express();
 const PORT = process.env.PORT || 5001;
 
 app.use(cors({
-  origin: ['http://localhost:5173', 'http://localhost:5174'],
-  credentials: true, // ← REQUIRED so the httpOnly cookie is sent cross-origin
+  origin: process.env.CORS_ORIGIN
+    ? process.env.CORS_ORIGIN.split(',')
+    : ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true,
 }));
 app.use(express.json());
 app.use(cookieParser());
@@ -34,14 +37,14 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/documents', documentRoutes);
 app.use('/api/analyze', analyzeRoutes);
 app.use('/api/auth', authRoutes);
-
+app.use('/api/jobs', jobRoutes);
+app.use('/api/chat', chatRoutes);
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'LexSimple server is running' });
+  res.json({ status: 'ok', message: 'ClearClause server is running' });
 });
 
 app.use(errorHandler);
 startAllWorkers();
-app.use('/api/jobs', jobRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);

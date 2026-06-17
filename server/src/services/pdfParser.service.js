@@ -116,7 +116,7 @@ export async function extractTextFromPDF(filePath) {
       // Temp image path
       const tmpPath = path.join(
         os.tmpdir(),
-        `lexsimple_${Date.now()}_p${pageNum}.png`
+        `ClearClause_${Date.now()}_p${pageNum}.png`
       );
 
       fs.writeFileSync(tmpPath, pageBuffer);

@@ -1,6 +1,9 @@
 // src/queues/documentQueue.js
 import { Queue } from 'bullmq';
 import redisConnection from '../config/redis.js';
+export const embeddingQueue = new Queue('embedding-processing', {
+  connection: redisConnection,
+});
 
 export const documentQueue = new Queue('document-processing', {
   connection: redisConnection,
@@ -43,4 +46,15 @@ export async function getJobStatus(jobId) {
   const failReason = job.failedReason || null;
 
   return { jobId: job.id, state, progress, failReason };
+}
+export async function enqueueEmbedding(documentId) {
+  await embeddingQueue.add(
+    'embed-document',
+    { documentId },
+    {
+      jobId: `embed-${documentId}`, // prevents duplicates
+      attempts: 3,
+      backoff: { type: 'exponential', delay: 3000 },
+    }
+  );
 }

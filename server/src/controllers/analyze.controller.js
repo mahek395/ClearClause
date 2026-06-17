@@ -12,13 +12,13 @@ export async function streamAnalysis(req, res) {
 
   // ── Auth: JWT via query param (SSE can't send custom headers) ────────────
   const token = req.query.token;
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
-  let user;
-  try {
-    user = jwt.verify(token, process.env.JWT_SECRET);
-  } catch {
-    return res.status(401).json({ error: 'Invalid token' });
+  let user = null;
+  if (token) {
+    try {
+      user = jwt.verify(token, process.env.JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
   }
 
   // ── SSE headers ───────────────────────────────────────────────────────────
@@ -41,7 +41,7 @@ export async function streamAnalysis(req, res) {
 
     const document = docResult.rows[0];
 
-    if (document.user_id !== user.id) {
+    if (document.user_id !== null && (!user || document.user_id !== user.id)) {
       sendEvent(res, { type: 'error', message: 'Access denied' });
       return res.end();
     }
@@ -79,7 +79,7 @@ export async function streamAnalysis(req, res) {
         const a = cached.rows[0];
         sendEvent(res, { type: 'doc_type',       value: a.doc_type });
         sendEvent(res, { type: 'provider',        value: a.ai_provider });
-        sendEvent(res, { type: 'summary',         chunk: a.overall_summary }); // ✅ FIXED: using overall_summary
+        sendEvent(res, { type: 'summary',         chunk: a.overall_summary });
         sendEvent(res, { type: 'overall_risk',    value: a.overall_risk });
         for (const section of (a.sections || [])) {
           sendEvent(res, { type: 'section', data: section });
@@ -110,9 +110,9 @@ export async function streamAnalysis(req, res) {
       onProvider: (p) => console.log(`[Stream] AI provider: ${p}`),
     });
 
-    sendEvent(res, { type: 'doc_type',     value: analysis.doc_type });
+    sendEvent(res, { type: 'doc_type',     value: analysis.document_type }); // ✅ FIXED: AI returns document_type
     sendEvent(res, { type: 'provider',     value: analysis.ai_provider });
-    sendEvent(res, { type: 'summary',      chunk: analysis.summary }); // ✅ FIXED: sending analysis.summary from AI
+    sendEvent(res, { type: 'summary',      chunk: analysis.summary });
     sendEvent(res, { type: 'overall_risk', value: analysis.overall_risk });
     for (const section of (analysis.sections || [])) {
       sendEvent(res, { type: 'section', data: section });
@@ -128,7 +128,7 @@ export async function streamAnalysis(req, res) {
           missing_clauses, sections, key_dates, key_amounts, ai_provider)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
        ON CONFLICT (document_id) DO UPDATE
-         SET overall_summary  = EXCLUDED.overall_summary,     -- ✅ FIXED: using overall_summary column
+         SET overall_summary  = EXCLUDED.overall_summary,
              doc_type        = EXCLUDED.doc_type,
              overall_risk    = EXCLUDED.overall_risk,
              missing_clauses = EXCLUDED.missing_clauses,
@@ -138,8 +138,8 @@ export async function streamAnalysis(req, res) {
              ai_provider     = EXCLUDED.ai_provider`,
       [
         documentId,
-        analysis.summary,          // ✅ AI returns 'summary', we store it in 'overall_summary' column
-        analysis.doc_type,
+        analysis.summary,
+        analysis.document_type,   // ✅ FIXED: AI returns document_type
         analysis.overall_risk,
         JSON.stringify(analysis.missing_clauses || []),
         JSON.stringify(analysis.sections        || []),
@@ -151,7 +151,7 @@ export async function streamAnalysis(req, res) {
 
     await pool.query(
       `UPDATE documents SET status = 'done', doc_type = $1, updated_at = NOW() WHERE id = $2`,
-      [analysis.doc_type, documentId]
+      [analysis.document_type, documentId]   // ✅ FIXED: AI returns document_type
     );
 
     sendEvent(res, { type: 'complete' });
