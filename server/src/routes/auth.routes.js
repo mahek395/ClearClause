@@ -1,5 +1,5 @@
 import express from 'express';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import pool from '../config/db.js';
 import { loginLimiter, registerLimiter } from "../middleware/rateLimiter.js";
 import {
