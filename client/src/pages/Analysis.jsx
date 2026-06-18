@@ -12,6 +12,7 @@ import AIProviderBadge from '../components/analysis/AIProviderBadge';
 import ShareButton from '../components/layout/ShareButton';
 import KeyTermsTable from '../components/analysis/KeyTermsTable';
 import ExportButton from './ExportButton';
+import ChatPanel from '../components/analysis/ChatPanel';
 
 function SectionSkeleton() {
   return (
@@ -75,7 +76,6 @@ function PDFPanel({ pdfUrl, onClose, isLoading }) {
   );
 }
 
-// Mobile PDF sheet — slides up from bottom as a full-screen overlay
 function MobilePDFSheet({ pdfUrl, isLoading, onClose }) {
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-950">
@@ -117,12 +117,7 @@ function MobilePDFSheet({ pdfUrl, isLoading, onClose }) {
         ) : !isLoading ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 px-6 text-center">
             <p className="text-slate-400 text-sm">PDF preview isn't available on this device.</p>
-            <a
-              href={pdfUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-amber-400 text-sm underline"
-            >
+            <a href={pdfUrl} target="_blank" rel="noopener noreferrer" className="text-amber-400 text-sm underline">
               Open in new tab
             </a>
           </div>
@@ -145,18 +140,27 @@ export default function Analysis() {
   const [showMobilePdf, setShowMobilePdf] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfLoading, setPdfLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('analysis');
   const pdfBlobRef = useRef(null);
+
+  // ── Chat state lifted up so it survives Analysis <-> Chat tab switches ───────
+  const [chatMessages, setChatMessages] = useState([
+    {
+      role: 'assistant',
+      content: "Hi! I've read this document. Ask me anything about it — clauses, risks, key dates, obligations, or anything you're unsure about.",
+    },
+  ]);
 
   const {
     sections, summary, docType, overallRisk,
     missingClauses, keyDates, keyAmounts,
     aiProvider, status, error,
   } = useAnalysisStream(
-    !loading && isAuthenticated ? id : null
+    !loading ? id : null
   );
 
   useEffect(() => {
-    if (!id || !isAuthenticated) return;
+    if (!id) return;
 
     async function fetchDocument() {
       try {
@@ -178,7 +182,7 @@ export default function Analysis() {
 
     fetchDocument();
     return () => { if (pdfBlobRef.current) URL.revokeObjectURL(pdfBlobRef.current); };
-  }, [id, isAuthenticated]);
+  }, [id]);
 
   useEffect(() => {
     if (status === 'complete') toast.success('Analysis complete!');
@@ -193,12 +197,10 @@ export default function Analysis() {
     );
   }
 
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-
   const isStreaming = status === 'streaming' || status === 'connecting';
   const isComplete = status === 'complete';
 
-  // ── Waiting state ────────────────────────────────────────────────────────────
+  // ── Waiting state ─────────────────────────────────────────────────────────────
   if (status === 'waiting') {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4 sm:px-6">
@@ -259,9 +261,29 @@ export default function Analysis() {
     );
   }
 
-  // ── Analysis content (shared between split and single-column layouts) ─────────
+  // ── Analysis content ──────────────────────────────────────────────────────────
   const analysisContent = (
     <div className={showPdf ? 'max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-8' : 'max-w-4xl mx-auto px-4 sm:px-6 pt-6 sm:pt-8 pb-20'}>
+
+      {!isAuthenticated && (
+        <div className="bg-amber-400/10 border border-amber-400/20 rounded-xl px-4 py-3.5 mb-6 text-sm text-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="text-lg">⚠️</span>
+            <p>
+              You are using ClearClause as a guest. Your analysis <span className="font-semibold text-amber-300">will not be saved</span>.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link to="/login" className="text-amber-400 hover:text-amber-300 font-semibold transition-colors">
+              Log in
+            </Link>
+            <span className="text-slate-700">|</span>
+            <Link to="/register" className="text-amber-400 hover:text-amber-300 font-semibold transition-colors">
+              Sign up
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Header row */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
@@ -278,9 +300,7 @@ export default function Analysis() {
           <h1 className="text-xl sm:text-2xl font-black text-white">Document Analysis</h1>
         </div>
 
-        {/* Action buttons — wrap naturally on mobile */}
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Desktop-only: View PDF inline split */}
           <button
             onClick={() => setShowPdf(v => !v)}
             disabled={!pdfUrl}
@@ -300,7 +320,6 @@ export default function Analysis() {
             )}
           </button>
 
-          {/* Mobile-only: View PDF full screen */}
           <button
             onClick={() => setShowMobilePdf(true)}
             disabled={!pdfUrl && !pdfLoading}
@@ -322,58 +341,95 @@ export default function Analysis() {
         </div>
       </div>
 
-      {/* Streaming banner */}
-      {isStreaming && (
-        <div className="flex items-center gap-3 bg-amber-400/10 border border-amber-400/20 rounded-xl px-4 py-3 mb-6">
-          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
-          <p className="text-amber-300 text-sm">
-            Analyzing your document with AI — results appear as they stream in…
-          </p>
-        </div>
-      )}
-
-      {/* Cards */}
-      <div className="mb-6">
-        <SummaryCard summary={summary} docType={docType} overallRisk={overallRisk} />
-      </div>
-
-      {missingClauses.length > 0 && (
-        <div className="mb-6"><MissingClauseAlert clauses={missingClauses} /></div>
-      )}
-
-      {(keyDates?.length > 0 || keyAmounts?.length > 0) && (
-        <div className="mb-6"><KeyTermsTable keyDates={keyDates} keyAmounts={keyAmounts} /></div>
-      )}
-
-      {/* Section breakdown */}
-      <div>
-        <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">
-          Section-by-Section Breakdown
-          {sections.length > 0 && <span className="ml-2 text-amber-400">({sections.length} sections)</span>}
-        </h2>
-        <div className="space-y-3">
-          {sections.map((section, i) => <SectionCard key={i} section={section} index={i} />)}
-          {isStreaming && sections.length < 3 && (
-            <>
-              <SectionSkeleton />
-              <SectionSkeleton />
-              {sections.length === 0 && <SectionSkeleton />}
-            </>
-          )}
-        </div>
-        {isComplete && sections.length === 0 && (
-          <div className="text-center py-12 text-slate-500 text-sm">
-            No sections were extracted from this document.
-          </div>
-        )}
-      </div>
-
+      {/* Tab toggle — only shown when analysis is complete */}
       {isComplete && (
-        <div className="mt-10 border-t border-slate-800 pt-8">
-          <p className="text-slate-500 text-sm text-center">
-            This is an AI-generated summary. Always consult a legal professional before signing.
-          </p>
+        <div className="flex gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 mb-6 w-fit">
+          <button
+            onClick={() => setActiveTab('analysis')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'analysis'
+                ? 'bg-amber-400 text-slate-950'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Analysis
+          </button>
+          <button
+            onClick={() => setActiveTab('chat')}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'chat'
+                ? 'bg-amber-400 text-slate-950'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Ask AI
+          </button>
         </div>
+      )}
+
+      {/* ── Chat tab ── */}
+      {activeTab === 'chat' && isComplete ? (
+        <ChatPanel
+          documentId={id}
+          messages={chatMessages}
+          setMessages={setChatMessages}
+        />
+      ) : (
+        <>
+          {/* Streaming banner */}
+          {isStreaming && (
+            <div className="flex items-center gap-3 bg-amber-400/10 border border-amber-400/20 rounded-xl px-4 py-3 mb-6">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse flex-shrink-0" />
+              <p className="text-amber-300 text-sm">
+                Analyzing your document with AI — results appear as they stream in…
+              </p>
+            </div>
+          )}
+
+          {/* Cards */}
+          <div className="mb-6">
+            <SummaryCard summary={summary} docType={docType} overallRisk={overallRisk} />
+          </div>
+
+          {missingClauses.length > 0 && (
+            <div className="mb-6"><MissingClauseAlert clauses={missingClauses} /></div>
+          )}
+
+          {(keyDates?.length > 0 || keyAmounts?.length > 0) && (
+            <div className="mb-6"><KeyTermsTable keyDates={keyDates} keyAmounts={keyAmounts} /></div>
+          )}
+
+          {/* Section breakdown */}
+          <div>
+            <h2 className="text-slate-400 text-xs font-semibold uppercase tracking-widest mb-4">
+              Section-by-Section Breakdown
+              {sections.length > 0 && <span className="ml-2 text-amber-400">({sections.length} sections)</span>}
+            </h2>
+            <div className="space-y-3">
+              {sections.map((section, i) => <SectionCard key={i} section={section} index={i} />)}
+              {isStreaming && sections.length < 3 && (
+                <>
+                  <SectionSkeleton />
+                  <SectionSkeleton />
+                  {sections.length === 0 && <SectionSkeleton />}
+                </>
+              )}
+            </div>
+            {isComplete && sections.length === 0 && (
+              <div className="text-center py-12 text-slate-500 text-sm">
+                No sections were extracted from this document.
+              </div>
+            )}
+          </div>
+
+          {isComplete && (
+            <div className="mt-10 border-t border-slate-800 pt-8">
+              <p className="text-slate-500 text-sm text-center">
+                This is an AI-generated summary. Always consult a legal professional before signing.
+              </p>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -383,7 +439,6 @@ export default function Analysis() {
     return (
       <div className="h-screen bg-slate-950 text-white flex flex-col overflow-hidden">
         <div className="flex flex-1 overflow-hidden pt-16">
-          {/* PDF panel: 42% on desktop */}
           <div className="w-[42%] flex-shrink-0 overflow-hidden">
             <PDFPanel pdfUrl={pdfUrl} isLoading={pdfLoading} onClose={() => setShowPdf(false)} />
           </div>
@@ -398,7 +453,6 @@ export default function Analysis() {
     <div className="min-h-screen bg-slate-950 text-white">
       {analysisContent}
 
-      {/* Mobile PDF full-screen overlay */}
       {showMobilePdf && (
         <MobilePDFSheet
           pdfUrl={pdfUrl}

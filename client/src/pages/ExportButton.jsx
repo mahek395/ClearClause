@@ -26,7 +26,7 @@ export default function ExportButton({ documentId, filename }) {
 
       const anchor = document.createElement('a');
       anchor.href = url;
-      anchor.download = `LexSimple_${safeName}.pdf`;
+      anchor.download = `ClearClause_${safeName}.pdf`;
       document.body.appendChild(anchor);
       anchor.click();
       anchor.remove();

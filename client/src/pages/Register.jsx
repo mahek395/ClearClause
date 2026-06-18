@@ -39,7 +39,7 @@ export default function Register() {
     try {
       setSubmitting(true);
       await register(email, password);
-      toast.success('Account created! Welcome to LexSimple.');
+      toast.success('Account created! Welcome to ClearClause.');
       navigate('/dashboard');
     } catch (err) {
       const msg = err.response?.data?.message || 'Registration failed.';

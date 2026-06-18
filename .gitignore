@@ -1,10 +1,18 @@
-﻿node_modules/
+﻿# Environment
 .env
-.env.local
-.env.production
+server/.env
+client/.env
+
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Uploads
 server/uploads/
+
+# Build output
 client/dist/
+
+# Logs
 *.log
-npm-debug.log*
-.DS_Store
-Thumbs.db

@@ -69,7 +69,7 @@ export default function SharedView() {
             to="/"
             className="inline-block bg-amber-400 text-slate-950 font-semibold px-6 py-3 rounded-xl hover:bg-amber-300 transition-colors"
           >
-            Go to LexSimple
+            Go to ClearClause
           </Link>
         </div>
       </div>

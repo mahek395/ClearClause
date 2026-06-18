@@ -7,7 +7,7 @@ export default function Footer() {
             <span className="text-slate-950 font-black text-xs">Lx</span>
           </div>
           <span className="text-slate-400 text-sm text-center sm:text-left">
-            LexSimple — Understand any legal document in plain English
+            ClearClause — Understand any legal document in plain English
           </span>
         </div>
         <p className="text-slate-600 text-xs text-center sm:text-right flex-shrink-0">

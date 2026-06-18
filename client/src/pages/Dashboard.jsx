@@ -10,6 +10,7 @@ export default function Dashboard() {
   const [documentsLoading, setDocumentsLoading] = useState(true);
   const [error,            setError]            = useState('');
   const [copied,           setCopied]           = useState(false);
+  const [deletingId,       setDeletingId]       = useState(null);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -39,6 +40,24 @@ export default function Dashboard() {
     } catch (err) {
       console.error(err);
       alert('Failed to copy share link.');
+    }
+  };
+
+  const handleDelete = async (docId, filename) => {
+    const confirmed = window.confirm(
+      `Delete "${filename}"? This cannot be undone — the document, its analysis, and chat history will be permanently removed.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(docId);
+      await api.delete(`/documents/${docId}`);
+      setDocuments(prev => prev.filter(d => d.id !== docId));
+    } catch (err) {
+      console.error(err);
+      alert('Failed to delete document. Please try again.');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -102,7 +121,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-2xl sm:text-3xl font-black mb-3 sm:mb-4">No documents yet</h3>
             <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto mb-8 sm:mb-10">
-              Upload your first legal document and let LexSimple explain it in plain English with AI-powered risk analysis.
+              Upload your first legal document and let ClearClause explain it in plain English with AI-powered risk analysis.
             </p>
             <Link
               to="/"
@@ -147,7 +166,7 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                {/* Action buttons — equal height, good tap targets */}
+                {/* Action buttons */}
                 <div className="flex gap-2 sm:gap-3">
                   <Link
                     to={`/analyze/${doc.id}`}
@@ -161,6 +180,14 @@ export default function Dashboard() {
                     className="px-4 py-3 rounded-xl border border-slate-700 hover:border-slate-500 active:bg-slate-800 transition-colors text-sm text-slate-300 touch-manipulation"
                   >
                     Share
+                  </button>
+                  <button
+                    onClick={() => handleDelete(doc.id, doc.filename)}
+                    disabled={deletingId === doc.id}
+                    aria-label="Delete document"
+                    className="px-4 py-3 rounded-xl border border-slate-700 hover:border-red-500/50 hover:text-red-400 active:bg-slate-800 transition-colors text-sm text-slate-300 touch-manipulation disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {deletingId === doc.id ? '...' : '🗑️'}
                   </button>
                 </div>
               </div>

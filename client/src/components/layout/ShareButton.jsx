@@ -28,7 +28,7 @@ export default function ShareButton({ shareToken }) {
   const handleShare = async () => {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'LexSimple Report', url: shareUrl });
+        await navigator.share({ title: 'ClearClause Report', url: shareUrl });
         return;
       } catch (err) {
         // User cancelled the share sheet — fall through to clipboard copy
