@@ -49,14 +49,14 @@ router.get(
 
 router.get(
   '/:id/file',
-  verifyTokenOptional,
+  verifyToken,
   async (req, res) => {
     try {
       const { id } = req.params;
-      const userId = req.user?.id || null;
+      const userId = req.user.id;
 
       const result = await pool.query(
-        'SELECT file_path FROM documents WHERE id = $1 AND (user_id IS NULL OR user_id = $2)',
+        'SELECT file_url, file_path FROM documents WHERE id = $1 AND user_id = $2',
         [id, userId]
       );
 
@@ -64,15 +64,21 @@ router.get(
         return res.status(404).json({ error: 'Document not found' });
       }
 
-      const filePath = path.resolve(result.rows[0].file_path);
+      const { file_url, file_path } = result.rows[0];
 
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: 'File not found on disk' });
+      // ── Serve from Cloudinary if available ───────────────────────────────
+      if (file_url) {
+        return res.redirect(file_url);
       }
 
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', 'inline');
-      fs.createReadStream(filePath).pipe(res);
+      // ── Fallback: serve from local disk (legacy/local dev) ───────────────
+      if (file_path && fs.existsSync(file_path)) {
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline');
+        return fs.createReadStream(file_path).pipe(res);
+      }
+
+      return res.status(404).json({ error: 'File not found' });
 
     } catch (err) {
       console.error('[PDF Serve Error]', err);
@@ -80,7 +86,6 @@ router.get(
     }
   }
 );
-
 // ---------------------------------------------------
 // Logged-in user's documents
 // ---------------------------------------------------

@@ -1,16 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(process.cwd(), 'uploads'));
-  },
-  filename: (req, file, cb) => {
-    const unique = `${Date.now()}-${uuidv4()}${path.extname(file.originalname)}`;
-    cb(null, unique);
-  },
-});
+// Use memory storage — file goes to Cloudinary, not local disk
+const storage = multer.memoryStorage();
 
 export const upload = multer({
   storage,
