@@ -41,10 +41,10 @@ export default function Navbar() {
             className="flex items-center gap-2.5 flex-shrink-0"
           >
             <div className="w-8 h-8 bg-amber-400 rounded-lg flex items-center justify-center">
-              <span className="text-slate-950 font-black text-sm">Lx</span>
+              <span className="text-slate-950 font-black text-sm">CC</span>
             </div>
             <span className="text-white font-bold text-lg tracking-tight">
-              Lex<span className="text-amber-400">Simple</span>
+              Clear<span className="text-amber-400">Clause</span>
             </span>
           </Link>
 
@@ -103,14 +103,12 @@ export default function Navbar() {
 
           {/* ── Mobile right side: CTA + hamburger ── */}
           <div className="flex sm:hidden items-center gap-2">
-            {/* Compact amber CTA — icon only on very small screens */}
             <button
               onClick={handleAnalyzeClick}
               aria-label="Analyze a document"
               className="bg-amber-400 text-slate-950 font-semibold text-sm px-3 py-2 rounded-lg hover:bg-amber-300 active:bg-amber-500 transition-colors touch-manipulation"
             >
               <span className="hidden xs:inline">Analyze</span>
-              {/* Upload icon for screens narrower than xs breakpoint */}
               <svg className="w-4 h-4 xs:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
                   d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -142,21 +140,18 @@ export default function Navbar() {
       {/* ── Mobile dropdown menu ── */}
       {menuOpen && (
         <>
-          {/* Backdrop — tap to close */}
           <div
             className="sm:hidden fixed inset-0 z-40 bg-slate-950/60"
             onClick={closeMenu}
             aria-hidden="true"
           />
 
-          {/* Menu panel — slides down from navbar */}
           <div className="sm:hidden fixed top-16 left-0 right-0 z-40 bg-slate-900 border-b border-slate-800 shadow-xl">
             <div className="px-4 py-3 space-y-1">
 
               {!loading && (
                 isAuthenticated ? (
                   <>
-                    {/* User identity */}
                     {user?.email && (
                       <div className="px-3 py-2 text-sm text-slate-500 truncate border-b border-slate-800 mb-2 pb-3">
                         {user.email}

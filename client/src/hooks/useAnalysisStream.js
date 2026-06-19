@@ -38,8 +38,9 @@ export function useAnalysisStream(documentId) {
     setError(null);
 
     function connect(token) {
-      eventSource = new EventSource(
-        `http://localhost:5001/api/analyze/stream/${documentId}?token=${token}`
+      const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
+      const eventSource = new EventSource(
+        `${BASE_URL}/analyze/stream/${documentId}?token=${token}`
       );
 
       eventSource.onopen = () => setStatus('streaming');

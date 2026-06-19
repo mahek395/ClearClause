@@ -3,12 +3,7 @@ import DropZone from '../components/upload/DropZone';
 import UploadProgress from './ProcessingProgress';
 import { uploadDocument } from '../services/api';
 
-const features = [
-  { icon: '🔍', title: 'Plain English Summary',    desc: 'Every clause explained simply — no legal jargon.' },
-  { icon: '🔴', title: 'Risk Clause Highlighting', desc: 'Risky clauses flagged as High, Medium, or Low risk.' },
-  { icon: '🔒', title: 'Scanned PDF Support',      desc: 'Image-based PDFs handled automatically with OCR.' },
-  { icon: '🔗', title: 'Shareable Report',         desc: 'Get a unique link to share the analysis with anyone.' },
-];
+
 
 export default function Home() {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -147,21 +142,6 @@ export default function Home() {
         <p className="text-slate-600 text-sm mt-6 px-4">
           Free · No login required · Works on English and Hindi documents
         </p>
-      </div>
-
-      {/* Features grid */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 pb-16 sm:pb-24">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-          {features.map((f) => (
-            <div key={f.title} className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex gap-4">
-              <span className="text-2xl flex-shrink-0">{f.icon}</span>
-              <div>
-                <h3 className="text-slate-100 font-semibold text-sm mb-1">{f.title}</h3>
-                <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   );
