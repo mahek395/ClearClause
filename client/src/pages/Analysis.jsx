@@ -336,7 +336,7 @@ export default function Analysis() {
           </button>
 
           <AIProviderBadge provider={aiProvider} />
-          {isComplete && shareToken && <ShareButton shareToken={shareToken} />}
+          {shareToken && <ShareButton shareToken={shareToken} />}
           {isComplete && <ExportButton documentId={id} filename={docFilename} />}
         </div>
       </div>
