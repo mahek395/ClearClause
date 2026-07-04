@@ -160,7 +160,7 @@ export default function Analysis() {
   );
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || loading) return;
 
     async function fetchDocument() {
       try {
