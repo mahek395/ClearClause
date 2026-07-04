@@ -116,6 +116,7 @@ export async function uploadDocument(req, res) {
 export async function getDocument(req, res) {
   try {
     const { id } = req.params;
+    const userId = req.user?.id || null;
 
     const result = await pool.query(
       `SELECT
@@ -129,8 +130,8 @@ export async function getDocument(req, res) {
          a.ai_provider
        FROM documents d
        LEFT JOIN analyses a ON a.document_id = d.id
-       WHERE d.id = $1 AND d.user_id = $2`,
-      [id, req.user.id]
+       WHERE d.id = $1 AND (d.user_id IS NULL OR d.user_id = $2)`,
+      [id, userId]
     );
 
     if (result.rows.length === 0) {
@@ -144,7 +145,6 @@ export async function getDocument(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
-
 // ---------------------------------------------------
 // Get Shared Document
 // ---------------------------------------------------
