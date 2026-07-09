@@ -4,21 +4,67 @@ const { Pool } = pkg;
 
 const co = new cohere.CohereClient({ token: process.env.COHERE_API_KEY });
 
-// Split text into overlapping chunks of ~500 tokens (~2000 chars)
-export function chunkText(text, chunkSize = 2000, overlap = 200) {
-  const chunks = [];
-  let start = 0;
+const SEPARATORS = [
+  /\n(?=\d+\.\s)/,       // before numbered clauses — lookahead, doesn't consume the number
+  /\n(?=[a-z]\)\s)/i,    // before lettered sub-clauses a) b) c)
+  /\n\n/,                // paragraph breaks
+  /\n/,                  // single line breaks
+  /(?<=[.!?])\s+/,       // sentence boundaries
+];
 
-  while (start < text.length) {
-    const end = start + chunkSize;
-    chunks.push({
-      index: chunks.length,
-      text: text.slice(start, end).trim(),
-    });
-    start += chunkSize - overlap;
+export function chunkText(text, maxChars = 1800) {
+  const chunks = [];
+
+  function split(segment, separatorIndex) {
+    if (segment.trim().length === 0) return;
+
+    if (segment.length <= maxChars) {
+      if (segment.trim().length > 50) {
+        chunks.push({ index: chunks.length, text: segment.trim() });
+      }
+      return;
+    }
+
+    if (separatorIndex >= SEPARATORS.length) {
+      for (let i = 0; i < segment.length; i += maxChars) {
+        const slice = segment.slice(i, i + maxChars).trim();
+        if (slice.length > 50) chunks.push({ index: chunks.length, text: slice });
+      }
+      return;
+    }
+
+    const sep = SEPARATORS[separatorIndex];
+    const parts = segment.split(sep).filter(p => p.trim().length > 0);
+
+    if (parts.length <= 1) {
+      split(segment, separatorIndex + 1);
+      return;
+    }
+
+    if (separatorIndex === 0) {
+      for (const part of parts) {
+        split(part, separatorIndex + 1);
+      }
+      return;
+    }
+
+    let current = '';
+    for (const part of parts) {
+      const candidate = current ? current + '\n' + part : part;
+      if (candidate.length > maxChars) {
+        if (current.trim().length > 50) split(current.trim(), separatorIndex + 1);
+        current = part;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current.trim().length > 50) split(current.trim(), separatorIndex + 1);
   }
 
-  return chunks.filter(c => c.text.length > 50); // drop tiny trailing chunks
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+  split(normalized, 0);
+
+  return chunks;
 }
 
 // Embed chunks via Cohere and store in DB
