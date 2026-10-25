@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build && node -e \"process.exit(0)\"",
+    "dev": "node init && vite",
+    "build": "node init && vite build && node -e \"process.exit(0)\"",
     "lint": "eslint .",
     "preview": "vite preview"
   },
