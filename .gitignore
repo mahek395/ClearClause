@@ -1,5 +1,4 @@
 ﻿# Environment
-.env
 server/.env
 client/.env
 
@@ -19,3 +18,4 @@ client/dist/
 branch_structure.json
 temp_auto_push.bat
 temp_interactive_push.bat
+config.bat
